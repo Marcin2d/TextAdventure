@@ -89,18 +89,5 @@
         "AlternativePrompt": "",
         "Tags": ["test"],
         "Conditions": []
-    },
-	{
-        "ID": "charCreate007",
-        "Speaker": "The Narrator",
-        "Prompt": "I see, quite the opinion of yourself... Looks like you're nearly all there in the head. Nothing left to do but to turn you loose on this world!",
-        "AcceptedInput": ["Thank you"],
-        "NegativeInput": [],
-        "AlternativeInputs": [],
-        "NextPromptID": "",
-        "NegativePrompt": "",
-        "AlternativePrompt": "",
-        "Tags": ["test"],
-        "Conditions": []
     }
 ]
