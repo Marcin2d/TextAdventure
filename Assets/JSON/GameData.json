@@ -1,0 +1,34 @@
+{
+  "Classes": [
+    {
+      "Name": "Ranger",
+      "Strength": 2,
+      "Charisma": 0,
+      "Dexterity": 2,
+      "Intelligence": 1
+    },
+    {
+      "Name": "Fighter",
+      "Strength": 4,
+      "Charisma": 0,
+      "Dexterity": 0,
+      "Intelligence": -1
+    }
+  ],
+  "Races": [
+    {
+      "Name": "Elf",
+      "Strength": 0,
+      "Charisma": 0,
+      "Dexterity": 2,
+      "Intelligence": 2
+    },
+    {
+      "Name": "Orc",
+      "Strength": 3,
+      "Charisma": 0,
+      "Dexterity": 0,
+      "Intelligence": 0
+    }
+  ]
+}
