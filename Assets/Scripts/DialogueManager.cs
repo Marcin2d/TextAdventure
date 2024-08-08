@@ -18,11 +18,13 @@ public class DialogueEntry
     public string UnacceptedInputResponse;
     public List<string> Tags;
     public List<string> Conditions;
+    public string Trigger; // Add Trigger field
 }
 
 [System.Serializable]
 public class DialogueData
 {
+    public string StartDialogueID; // Add starting dialogue ID
     public List<DialogueEntry> dialogues;
 }
 
@@ -36,15 +38,34 @@ public class DialogueManager : MonoBehaviour
 
     private DialogueData dialogueData;
     private GameData gameData;
-    private string currentDialogueID = "charCreate001";
+    private string currentDialogueID;
     private string dialogueHistory = "";
     private User playerCharacter;  // Instance of User class
 
     void Start()
     {
-        dialogueData = JsonUtility.FromJson<DialogueData>("{\"dialogues\":" + dialogueJson.text + "}");
-        gameData = JsonUtility.FromJson<GameData>(gameDataJson.text);
+        if (dialogueJson != null)
+        {
+            Debug.Log("Dialogue JSON: " + dialogueJson.text);
+            dialogueData = JsonUtility.FromJson<DialogueData>(dialogueJson.text);
+            currentDialogueID = dialogueData.StartDialogueID;
+        }
+        else
+        {
+            Debug.LogError("Dialogue JSON file is not assigned!");
+        }
+
+        if (gameDataJson != null)
+        {
+            gameData = JsonUtility.FromJson<GameData>(gameDataJson.text);
+        }
+        else
+        {
+            Debug.LogError("GameData JSON file is not assigned!");
+        }
+
         playerCharacter = User.LoadUserData();  // Load user data or create new user
+
         DisplayPrompt(GetDialogueByID(currentDialogueID).Prompt);
 
         if (submitButton != null)
@@ -100,10 +121,9 @@ public class DialogueManager : MonoBehaviour
             Debug.Log("Current Dialogue ID: " + currentDialogueID);
             Debug.Log("Player Response: " + response);
 
-            // Check if we are asking for the player's name (special case)
             if (currentDialogueID == "charCreate002" || currentDialogue.AcceptedInput.Any(input => input.Equals(response, System.StringComparison.OrdinalIgnoreCase)))
             {
-                UpdateCharacter(currentDialogueID, response);
+                HandleTrigger(currentDialogue.Trigger, response);
                 currentDialogueID = currentDialogue.NextPromptID;
                 Debug.Log("Next Dialogue ID: " + currentDialogueID);
                 DisplayPrompt(GetDialogueByID(currentDialogueID).Prompt); // Display the next prompt
@@ -120,29 +140,29 @@ public class DialogueManager : MonoBehaviour
         }
     }
 
-    void UpdateCharacter(string dialogueID, string response)
+    void HandleTrigger(string trigger, string response)
     {
-        // Update character based on the dialogue step and input
-        switch (dialogueID)
+        switch (trigger)
         {
-            case "charCreate002":
+            case "SetName":
                 playerCharacter.Name = response;
+                Debug.Log("Player Name Set: " + playerCharacter.Name);
                 break;
-            case "charCreate003":
+            case "SetRace":
                 playerCharacter.Race = response;
                 break;
-            case "charCreate004":
+            case "SetClass":
                 playerCharacter.CharacterClass = response;
                 break;
-            case "charCreate005":
+            case "SetPronouns":
                 playerCharacter.Pronouns = response;
                 break;
-            case "charCreate006":
+            case "SetAttractiveness":
                 playerCharacter.Attractiveness = int.Parse(response); // Ensure the response is a valid number
                 break;
         }
 
-        if (dialogueID == "charCreate003" || dialogueID == "charCreate004")
+        if (trigger == "SetRace" || trigger == "SetClass")
         {
             CharacterRace race = gameData.Races.FirstOrDefault(r => r.Name == playerCharacter.Race);
             CharacterClass clazz = gameData.Classes.FirstOrDefault(c => c.Name == playerCharacter.CharacterClass);
