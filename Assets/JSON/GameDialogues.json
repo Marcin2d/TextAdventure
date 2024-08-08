@@ -3,7 +3,7 @@
         "ID": "charCreate001",
         "Speaker": "The Narrator",
         "Prompt": "Hello, you look wrecked. Do you know who you are?",
-        "AcceptedInput": ["yes"],
+        "AcceptedInput": ["yes","y","n","no"],
         "NegativeInput": [],
         "AlternativeInputs": [],
         "NextPromptID": "charCreate002",
