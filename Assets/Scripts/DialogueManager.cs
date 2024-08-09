@@ -18,29 +18,29 @@ public class DialogueEntry
     public string UnacceptedInputResponse;
     public List<string> Tags;
     public List<string> Conditions;
-    public string Trigger; // Add Trigger field
+    public string Trigger;
 }
 
 [System.Serializable]
 public class DialogueData
 {
-    public string StartDialogueID; // Add starting dialogue ID
+    public string StartDialogueID;
     public List<DialogueEntry> dialogues;
 }
 
 public class DialogueManager : MonoBehaviour
 {
-    public Text dialogueHistoryText;
+    public ScrollRect dialogueScrollView; // Ensure this is connected in the Unity Inspector
+    public Text dialogueHistoryText;      // Connect this in the Unity Inspector
     public InputField responseInput;
     public Button submitButton;
-    public TextAsset dialogueJson; // Attach your dialogue JSON file in the Unity Inspector
-    public TextAsset gameDataJson; // Attach your GameData JSON file in the Unity Inspector
+    public TextAsset dialogueJson;
+    public TextAsset gameDataJson;
 
     private DialogueData dialogueData;
     private GameData gameData;
     private string currentDialogueID;
-    private string dialogueHistory = "";
-    private User playerCharacter;  // Instance of User class
+    private User playerCharacter;
 
     void Start()
     {
@@ -64,7 +64,7 @@ public class DialogueManager : MonoBehaviour
             Debug.LogError("GameData JSON file is not assigned!");
         }
 
-        playerCharacter = User.LoadUserData();  // Load user data or create new user
+        playerCharacter = User.LoadUserData();
 
         DisplayPrompt(GetDialogueByID(currentDialogueID).Prompt);
 
@@ -93,8 +93,7 @@ public class DialogueManager : MonoBehaviour
 
     public void DisplayPrompt(string prompt)
     {
-        dialogueHistory += "Narrator: " + prompt + "\n";
-        dialogueHistoryText.text = dialogueHistory;
+        AddDialogueLine("Narrator: " + prompt);
     }
 
     public void OnSubmitResponse()
@@ -102,15 +101,39 @@ public class DialogueManager : MonoBehaviour
         if (responseInput != null && !string.IsNullOrWhiteSpace(responseInput.text))
         {
             string playerResponse = responseInput.text;
-            UpdateDialogueHistory(playerResponse); // Update history with player response
-            HandleResponse(playerResponse);
+            AddDialogueLine("Player: " + playerResponse); // Update the display with the player's response
             responseInput.text = "";  // Clear the input field
             responseInput.ActivateInputField();  // Refocus on the input field
+            HandleResponse(playerResponse);
         }
         else
         {
-            UpdateSystemMessage("Please enter a response."); // System message without speaker
+            AddSystemMessage("Please enter a response.");
         }
+    }
+
+    private void AddDialogueLine(string text)
+    {
+        // Update the dialogue history with the new line of text
+        dialogueHistoryText.text += text + "\n";
+
+        // Force Canvas update to recalculate sizes
+        Canvas.ForceUpdateCanvases();
+
+        // Scroll to the bottom
+        dialogueScrollView.verticalNormalizedPosition = 0f;
+    }
+
+    private void AddSystemMessage(string message)
+    {
+        // Update the dialogue history with a system message
+        dialogueHistoryText.text += message + "\n";
+
+        // Force Canvas update to recalculate sizes
+        Canvas.ForceUpdateCanvases();
+
+        // Scroll to the bottom
+        dialogueScrollView.verticalNormalizedPosition = 0f;
     }
 
     void HandleResponse(string response)
@@ -126,7 +149,7 @@ public class DialogueManager : MonoBehaviour
                 HandleTrigger(currentDialogue.Trigger, response);
                 currentDialogueID = currentDialogue.NextPromptID;
                 Debug.Log("Next Dialogue ID: " + currentDialogueID);
-                DisplayPrompt(GetDialogueByID(currentDialogueID).Prompt); // Display the next prompt
+                DisplayPrompt(GetDialogueByID(currentDialogueID).Prompt);
             }
             else
             {
@@ -158,7 +181,7 @@ public class DialogueManager : MonoBehaviour
                 playerCharacter.Pronouns = response;
                 break;
             case "SetAttractiveness":
-                playerCharacter.Attractiveness = int.Parse(response); // Ensure the response is a valid number
+                playerCharacter.Attractiveness = int.Parse(response);
                 break;
         }
 
@@ -172,18 +195,6 @@ public class DialogueManager : MonoBehaviour
             }
         }
 
-        playerCharacter.SaveUserData(); // Save user data after each update
-    }
-
-    void UpdateSystemMessage(string message)
-    {
-        dialogueHistory += message + "\n"; // Add the message without a speaker prefix
-        dialogueHistoryText.text = dialogueHistory;
-    }
-
-    void UpdateDialogueHistory(string playerResponse)
-    {
-        dialogueHistory += "Player: " + playerResponse + "\n";
-        dialogueHistoryText.text = dialogueHistory;
+        playerCharacter.SaveUserData();
     }
 }
