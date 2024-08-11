@@ -1,52 +1,28 @@
 using UnityEngine;
+using TMPro;
 using UnityEngine.UI;
-using System.Collections.Generic;
 using System.Linq;
-
-[System.Serializable]
-public class DialogueEntry
-{
-    public string ID;
-    public string Speaker;
-    public string Prompt;
-    public List<string> AcceptedInput;
-    public List<string> NegativeInput;
-    public List<string> AlternativeInputs;
-    public string NextPromptID;
-    public string NegativePrompt;
-    public string AlternativePrompt;
-    public string UnacceptedInputResponse;
-    public List<string> Tags;
-    public List<string> Conditions;
-    public string Trigger;
-}
-
-[System.Serializable]
-public class DialogueData
-{
-    public string StartDialogueID;
-    public List<DialogueEntry> dialogues;
-}
+using System.IO;
 
 public class DialogueManager : MonoBehaviour
 {
-    public ScrollRect dialogueScrollView; // Ensure this is connected in the Unity Inspector
-    public Text dialogueHistoryText;      // Connect this in the Unity Inspector
-    public InputField responseInput;
-    public Button submitButton;
-    public TextAsset dialogueJson;
-    public TextAsset gameDataJson;
+    public TextMeshProUGUI dialogueText;  // Reference to the TextMeshProUGUI component
+    public InputField responseInput;      // Input field for player responses
+    public Button submitButton;           // Submit button
+    public TextAsset dialogueJson;        // JSON file containing dialogue data
+    public TextAsset gameDataJson;        // JSON file containing game data
 
-    private DialogueData dialogueData;
-    private GameData gameData;
-    private string currentDialogueID;
-    private User playerCharacter;
+    private DialogueData dialogueData;    // Container for parsed dialogue data
+    private GameData gameData;            // Container for parsed game data
+    private string currentDialogueID;     // ID of the current dialogue
+    private User playerCharacter;         // The player's character data
+    private DialogueHistory dialogueHistory = new DialogueHistory();  // Keeps track of dialogue history
+    private string historyFilePath;       // File path for saving dialogue history
 
     void Start()
     {
         if (dialogueJson != null)
         {
-            Debug.Log("Dialogue JSON: " + dialogueJson.text);
             dialogueData = JsonUtility.FromJson<DialogueData>(dialogueJson.text);
             currentDialogueID = dialogueData.StartDialogueID;
         }
@@ -64,7 +40,10 @@ public class DialogueManager : MonoBehaviour
             Debug.LogError("GameData JSON file is not assigned!");
         }
 
-        playerCharacter = User.LoadUserData();
+        playerCharacter = User.LoadUserData(); // Load or create user data
+
+        // Set the file path for saving dialogue history
+        historyFilePath = Path.Combine(Application.persistentDataPath, "DialogueHistory.json");
 
         DisplayPrompt(GetDialogueByID(currentDialogueID).Prompt);
 
@@ -93,7 +72,15 @@ public class DialogueManager : MonoBehaviour
 
     public void DisplayPrompt(string prompt)
     {
-        AddDialogueLine("Narrator: " + prompt);
+        var currentDialogue = GetDialogueByID(currentDialogueID);
+        if (currentDialogue != null)
+        {
+            AddDialogueLine(currentDialogue.Speaker, prompt);
+        }
+        else
+        {
+            Debug.LogError("No dialogue found for the current ID.");
+        }
     }
 
     public void OnSubmitResponse()
@@ -101,39 +88,53 @@ public class DialogueManager : MonoBehaviour
         if (responseInput != null && !string.IsNullOrWhiteSpace(responseInput.text))
         {
             string playerResponse = responseInput.text;
-            AddDialogueLine("Player: " + playerResponse); // Update the display with the player's response
-            responseInput.text = "";  // Clear the input field
-            responseInput.ActivateInputField();  // Refocus on the input field
+            AddDialogueLine("Player", playerResponse);
+            responseInput.text = "";
+            responseInput.ActivateInputField();
             HandleResponse(playerResponse);
         }
         else
         {
-            AddSystemMessage("Please enter a response.");
+            AddSystemMessage("System", "Please enter a response.");
         }
     }
 
-    private void AddDialogueLine(string text)
+    private void AddDialogueLine(string speaker, string text)
     {
-        // Update the dialogue history with the new line of text
-        dialogueHistoryText.text += text + "\n";
+        // Combine the speaker's name and the text
+        string formattedText = $"{speaker}: {text}";
 
-        // Force Canvas update to recalculate sizes
-        Canvas.ForceUpdateCanvases();
+        // Update the TextMeshProUGUI component with the combined text
+        dialogueText.text = formattedText;
 
-        // Scroll to the bottom
-        dialogueScrollView.verticalNormalizedPosition = 0f;
+        // Save the dialogue history
+        dialogueHistory.History.Add(new DialogueHistoryEntry
+        {
+            Speaker = speaker,
+            Text = text,
+            Timestamp = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+        });
+
+        SaveDialogueHistory();
     }
 
-    private void AddSystemMessage(string message)
+    private void AddSystemMessage(string speaker, string message)
     {
-        // Update the dialogue history with a system message
-        dialogueHistoryText.text += message + "\n";
+        // Combine the speaker's name and the message
+        string formattedText = $"{speaker}: {message}";
 
-        // Force Canvas update to recalculate sizes
-        Canvas.ForceUpdateCanvases();
+        // Update the TextMeshProUGUI component with the system message
+        dialogueText.text = formattedText;
 
-        // Scroll to the bottom
-        dialogueScrollView.verticalNormalizedPosition = 0f;
+        // Save the system message to the dialogue history
+        dialogueHistory.History.Add(new DialogueHistoryEntry
+        {
+            Speaker = speaker,
+            Text = message,
+            Timestamp = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+        });
+
+        SaveDialogueHistory();
     }
 
     void HandleResponse(string response)
@@ -141,19 +142,14 @@ public class DialogueManager : MonoBehaviour
         var currentDialogue = GetDialogueByID(currentDialogueID);
         if (currentDialogue != null)
         {
-            Debug.Log("Current Dialogue ID: " + currentDialogueID);
-            Debug.Log("Player Response: " + response);
-
             if (currentDialogueID == "charCreate002" || currentDialogue.AcceptedInput.Any(input => input.Equals(response, System.StringComparison.OrdinalIgnoreCase)))
             {
                 HandleTrigger(currentDialogue.Trigger, response);
                 currentDialogueID = currentDialogue.NextPromptID;
-                Debug.Log("Next Dialogue ID: " + currentDialogueID);
                 DisplayPrompt(GetDialogueByID(currentDialogueID).Prompt);
             }
             else
             {
-                Debug.LogWarning("AcceptedInput does not contain the response: " + response);
                 DisplayPrompt(currentDialogue.UnacceptedInputResponse);
             }
         }
@@ -169,7 +165,6 @@ public class DialogueManager : MonoBehaviour
         {
             case "SetName":
                 playerCharacter.Name = response;
-                Debug.Log("Player Name Set: " + playerCharacter.Name);
                 break;
             case "SetRace":
                 playerCharacter.Race = response;
@@ -185,6 +180,8 @@ public class DialogueManager : MonoBehaviour
                 break;
         }
 
+        Debug.Log("Updated Player Character: " + JsonUtility.ToJson(playerCharacter));
+
         if (trigger == "SetRace" || trigger == "SetClass")
         {
             CharacterRace race = gameData.Races.FirstOrDefault(r => r.Name == playerCharacter.Race);
@@ -192,9 +189,26 @@ public class DialogueManager : MonoBehaviour
             if (race != null && clazz != null)
             {
                 playerCharacter.UpdateStats(race, clazz);
+                Debug.Log("Stats Updated: " + JsonUtility.ToJson(playerCharacter));
             }
         }
 
-        playerCharacter.SaveUserData();
+        playerCharacter.SaveUserData();  // Save user data after each update
+        Debug.Log("User data saved.");
+    }
+
+    private void SaveDialogueHistory()
+    {
+        string json = JsonUtility.ToJson(dialogueHistory, true);
+        File.WriteAllText(historyFilePath, json);
+    }
+
+    private void LoadDialogueHistory()
+    {
+        if (File.Exists(historyFilePath))
+        {
+            string json = File.ReadAllText(historyFilePath);
+            dialogueHistory = JsonUtility.FromJson<DialogueHistory>(json);
+        }
     }
 }

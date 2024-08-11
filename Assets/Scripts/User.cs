@@ -17,7 +17,9 @@ public class User
     public void SaveUserData()
     {
         string json = JsonUtility.ToJson(this, true);
-        File.WriteAllText(Application.persistentDataPath + "/user.json", json);
+        string path = Application.persistentDataPath + "/user.json";
+        File.WriteAllText(path, json);
+        Debug.Log("User data saved to: " + path);
     }
 
     public static User LoadUserData()
@@ -26,8 +28,10 @@ public class User
         if (File.Exists(path))
         {
             string json = File.ReadAllText(path);
+            Debug.Log("User data loaded: " + json);
             return JsonUtility.FromJson<User>(json);
         }
+        Debug.Log("No user data found, creating new user.");
         return new User(); // Return a new User if no data is found
     }
 
@@ -37,5 +41,6 @@ public class User
         Charisma = race.Charisma + characterClass.Charisma;
         Dexterity = race.Dexterity + characterClass.Dexterity;
         Intelligence = race.Intelligence + characterClass.Intelligence;
+        Debug.Log("Stats Updated: Strength = " + Strength + ", Charisma = " + Charisma + ", Dexterity = " + Dexterity + ", Intelligence = " + Intelligence);
     }
 }
