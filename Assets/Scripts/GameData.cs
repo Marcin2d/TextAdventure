@@ -1,9 +1,16 @@
 using System.Collections.Generic;
 
 [System.Serializable]
+public class GameData
+{
+    public List<CharacterRaceData> Races;
+    public List<CharacterClassData> Classes;
+}
+
+[System.Serializable]
 public class CharacterRaceData
 {
-    public CharacterRace Race; // Change from string to CharacterRace
+    public CharacterRace Race;
     public int Strength;
     public int Charisma;
     public int Dexterity;
@@ -13,7 +20,7 @@ public class CharacterRaceData
 [System.Serializable]
 public class CharacterClassData
 {
-    public CharacterClass Class; // Change from string to CharacterClass
+    public CharacterClass Class;
     public int Strength;
     public int Charisma;
     public int Dexterity;

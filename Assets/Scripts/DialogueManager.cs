@@ -46,7 +46,7 @@ public class DialogueManager : MonoBehaviour
         // Set the file path for saving dialogue history
         historyFilePath = Path.Combine(Application.persistentDataPath, "DialogueHistory.json");
 
-        StartCharacterCreation();
+        DisplayPrompt(GetDialogueByID(currentDialogueID).Prompt);
 
         if (submitButton != null)
         {
@@ -64,11 +64,6 @@ public class DialogueManager : MonoBehaviour
         {
             OnSubmitResponse();
         }
-    }
-
-    private void StartCharacterCreation()
-    {
-        DisplayPrompt(GetDialogueByID(currentDialogueID).Prompt);
     }
 
     DialogueEntry GetDialogueByID(string id)
@@ -123,6 +118,12 @@ public class DialogueManager : MonoBehaviour
 
         SaveDialogueHistory();
 
+        // If the speaker is the player, handle the response and update the user data
+        if (speaker == "Player")
+        {
+            HandleTrigger(GetDialogueByID(currentDialogueID).Trigger, text);
+        }
+
         // Save the user data after any updates
         playerCharacter.SaveUserData();
     }
@@ -151,43 +152,54 @@ public class DialogueManager : MonoBehaviour
         var currentDialogue = GetDialogueByID(currentDialogueID);
         if (currentDialogue != null)
         {
-            // Process the input based on the current dialogue ID
-            switch (currentDialogueID)
+            if (currentDialogueID == "charCreate002" || currentDialogue.AcceptedInput.Any(input => input.Equals(response, System.StringComparison.OrdinalIgnoreCase)))
             {
-                case "charCreate002":
-                    playerCharacter.Name = response;
-                    break;
-                case "charCreate003":
-                    playerCharacter.Race = (CharacterRace)Enum.Parse(typeof(CharacterRace), response);
-                    break;
-                case "charCreate004":
-                    playerCharacter.CharacterClass = (CharacterClass)Enum.Parse(typeof(CharacterClass), response);
-                    break;
-                case "charCreate005":
-                    playerCharacter.Pronouns = (Pronouns)Enum.Parse(typeof(Pronouns), response.Replace("/", ""));
-                    break;
-                case "charCreate006":
-                    playerCharacter.Attractiveness = int.Parse(response);
-                    break;
+                HandleTrigger(currentDialogue.Trigger, response);
+                currentDialogueID = currentDialogue.NextPromptID;
+                DisplayPrompt(GetDialogueByID(currentDialogueID).Prompt);
             }
-
-            // Update stats if race or class is set
-            if (currentDialogueID == "charCreate003" || currentDialogueID == "charCreate004")
+            else
             {
-                playerCharacter.UpdateStats();
-                Debug.Log("Stats Updated: " + JsonUtility.ToJson(playerCharacter));
+                DisplayPrompt(currentDialogue.UnacceptedInputResponse);
             }
-
-            // Save user data
-            playerCharacter.SaveUserData();
-
-            currentDialogueID = currentDialogue.NextPromptID;
-            DisplayPrompt(GetDialogueByID(currentDialogueID).Prompt);
         }
         else
         {
             Debug.LogError("Current dialogue is null for ID: " + currentDialogueID);
         }
+    }
+
+    void HandleTrigger(string trigger, string response)
+    {
+        switch (trigger)
+        {
+            case "SetName":
+                playerCharacter.Name = response;
+                break;
+            case "SetRace":
+                playerCharacter.Race = (CharacterRace)Enum.Parse(typeof(CharacterRace), response);
+                break;
+            case "SetClass":
+                playerCharacter.CharacterClass = (CharacterClass)Enum.Parse(typeof(CharacterClass), response);
+                break;
+            case "SetPronouns":
+                playerCharacter.Pronouns = (Pronouns)Enum.Parse(typeof(Pronouns), response);
+                break;
+            case "SetAttractiveness":
+                playerCharacter.Attractiveness = int.Parse(response);
+                break;
+        }
+
+        Debug.Log("Updated Player Character: " + JsonUtility.ToJson(playerCharacter));
+
+        if (trigger == "SetRace" || trigger == "SetClass")
+        {
+            playerCharacter.UpdateStats();
+            Debug.Log("Stats Updated: " + JsonUtility.ToJson(playerCharacter));
+        }
+
+        playerCharacter.SaveUserData();  // Save user data after each update
+        Debug.Log("User data saved.");
     }
 
     private void SaveDialogueHistory()
