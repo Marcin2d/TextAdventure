@@ -1,38 +1,15 @@
-using System.Linq;  // Include this namespace to use LINQ methods
+using System.IO;  // Add this at the top of your script
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 
 [System.Serializable]
-public class CharacterClass
-{
-    public string Name;
-    public int Strength;
-    public int Charisma;
-    public int Dexterity;
-    public int Intelligence;
-}
-
-[System.Serializable]
-public class CharacterRace
-{
-    public string Name;
-    public int Strength;
-    public int Charisma;
-    public int Dexterity;
-    public int Intelligence;
-}
-
-[System.Serializable]
-public class GameData
-{
-    public CharacterClass[] Classes;
-    public CharacterRace[] Races;
-}
-
 public class Character
 {
     public string Name;
-    public string Race;
-    public string CharacterClass;
-    public string Pronouns;
+    public CharacterRace Race;
+    public CharacterClass CharacterClass;
+    public Pronouns Pronouns;
     public int Attractiveness;
 
     public int Strength;
@@ -47,19 +24,54 @@ public class Character
         gameData = data;
     }
 
-    public void SetRaceAndClass(string raceName, string className)
+    public void SetRaceAndClass(CharacterRace race, CharacterClass characterClass)
     {
-        CharacterRace race = gameData.Races.FirstOrDefault(r => r.Name == raceName);
-        CharacterClass clazz = gameData.Classes.FirstOrDefault(c => c.Name == className);
+        var raceData = gameData.Races.FirstOrDefault(r => r.Race == race);
+        var classData = gameData.Classes.FirstOrDefault(c => c.Class == characterClass);
 
-        if (race != null && clazz != null)
+        if (raceData != null && classData != null)
         {
-            Race = raceName;
-            CharacterClass = className;
-            Strength = race.Strength + clazz.Strength;
-            Charisma = race.Charisma + clazz.Charisma;
-            Dexterity = race.Dexterity + clazz.Dexterity;
-            Intelligence = race.Intelligence + clazz.Intelligence;
+            Race = race;
+            CharacterClass = characterClass;
+            Strength = raceData.Strength + classData.Strength;
+            Charisma = raceData.Charisma + classData.Charisma;
+            Dexterity = raceData.Dexterity + classData.Dexterity;
+            Intelligence = raceData.Intelligence + classData.Intelligence;
+        }
+    }
+
+    public void SaveUserData()
+    {
+        string json = JsonUtility.ToJson(this, true);
+        System.IO.File.WriteAllText(Application.persistentDataPath + "/user.json", json);
+        Debug.Log("User data saved to: " + Application.persistentDataPath + "/user.json");
+    }
+
+    public static Character LoadUserData(GameData data)
+    {
+        string path = Application.persistentDataPath + "/user.json";
+        if (System.IO.File.Exists(path))
+        {
+            string json = System.IO.File.ReadAllText(path);
+            var character = JsonUtility.FromJson<Character>(json);
+            character.gameData = data;
+            return character;
+        }
+        Debug.Log("No user data found, creating new user.");
+        return new Character(data); // Return a new Character if no data is found
+    }
+
+    public void UpdateStats()
+    {
+        var raceData = gameData.Races.FirstOrDefault(r => r.Race == Race);
+        var classData = gameData.Classes.FirstOrDefault(c => c.Class == CharacterClass);
+
+        if (raceData != null && classData != null)
+        {
+            Strength = raceData.Strength + classData.Strength;
+            Charisma = raceData.Charisma + classData.Charisma;
+            Dexterity = raceData.Dexterity + classData.Dexterity;
+            Intelligence = raceData.Intelligence + classData.Intelligence;
         }
     }
 }

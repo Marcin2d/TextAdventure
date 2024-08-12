@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
@@ -14,8 +15,8 @@ public class DialogueManager : MonoBehaviour
 
     private DialogueData dialogueData;    // Container for parsed dialogue data
     private GameData gameData;            // Container for parsed game data
-    private string currentDialogueID;     // ID of the current dialogue
     private User playerCharacter;         // The player's character data
+    private string currentDialogueID;     // ID of the current dialogue
     private DialogueHistory dialogueHistory = new DialogueHistory();  // Keeps track of dialogue history
     private string historyFilePath;       // File path for saving dialogue history
 
@@ -40,12 +41,12 @@ public class DialogueManager : MonoBehaviour
             Debug.LogError("GameData JSON file is not assigned!");
         }
 
-        playerCharacter = User.LoadUserData(); // Load or create user data
+        playerCharacter = User.LoadUserData(gameData); // Load or create user data with GameData
 
         // Set the file path for saving dialogue history
         historyFilePath = Path.Combine(Application.persistentDataPath, "DialogueHistory.json");
 
-        DisplayPrompt(GetDialogueByID(currentDialogueID).Prompt);
+        StartCharacterCreation();
 
         if (submitButton != null)
         {
@@ -63,6 +64,11 @@ public class DialogueManager : MonoBehaviour
         {
             OnSubmitResponse();
         }
+    }
+
+    private void StartCharacterCreation()
+    {
+        DisplayPrompt(GetDialogueByID(currentDialogueID).Prompt);
     }
 
     DialogueEntry GetDialogueByID(string id)
@@ -116,6 +122,9 @@ public class DialogueManager : MonoBehaviour
         });
 
         SaveDialogueHistory();
+
+        // Save the user data after any updates
+        playerCharacter.SaveUserData();
     }
 
     private void AddSystemMessage(string speaker, string message)
@@ -142,59 +151,43 @@ public class DialogueManager : MonoBehaviour
         var currentDialogue = GetDialogueByID(currentDialogueID);
         if (currentDialogue != null)
         {
-            if (currentDialogueID == "charCreate002" || currentDialogue.AcceptedInput.Any(input => input.Equals(response, System.StringComparison.OrdinalIgnoreCase)))
+            // Process the input based on the current dialogue ID
+            switch (currentDialogueID)
             {
-                HandleTrigger(currentDialogue.Trigger, response);
-                currentDialogueID = currentDialogue.NextPromptID;
-                DisplayPrompt(GetDialogueByID(currentDialogueID).Prompt);
+                case "charCreate002":
+                    playerCharacter.Name = response;
+                    break;
+                case "charCreate003":
+                    playerCharacter.Race = (CharacterRace)Enum.Parse(typeof(CharacterRace), response);
+                    break;
+                case "charCreate004":
+                    playerCharacter.CharacterClass = (CharacterClass)Enum.Parse(typeof(CharacterClass), response);
+                    break;
+                case "charCreate005":
+                    playerCharacter.Pronouns = (Pronouns)Enum.Parse(typeof(Pronouns), response.Replace("/", ""));
+                    break;
+                case "charCreate006":
+                    playerCharacter.Attractiveness = int.Parse(response);
+                    break;
             }
-            else
+
+            // Update stats if race or class is set
+            if (currentDialogueID == "charCreate003" || currentDialogueID == "charCreate004")
             {
-                DisplayPrompt(currentDialogue.UnacceptedInputResponse);
+                playerCharacter.UpdateStats();
+                Debug.Log("Stats Updated: " + JsonUtility.ToJson(playerCharacter));
             }
+
+            // Save user data
+            playerCharacter.SaveUserData();
+
+            currentDialogueID = currentDialogue.NextPromptID;
+            DisplayPrompt(GetDialogueByID(currentDialogueID).Prompt);
         }
         else
         {
             Debug.LogError("Current dialogue is null for ID: " + currentDialogueID);
         }
-    }
-
-    void HandleTrigger(string trigger, string response)
-    {
-        switch (trigger)
-        {
-            case "SetName":
-                playerCharacter.Name = response;
-                break;
-            case "SetRace":
-                playerCharacter.Race = response;
-                break;
-            case "SetClass":
-                playerCharacter.CharacterClass = response;
-                break;
-            case "SetPronouns":
-                playerCharacter.Pronouns = response;
-                break;
-            case "SetAttractiveness":
-                playerCharacter.Attractiveness = int.Parse(response);
-                break;
-        }
-
-        Debug.Log("Updated Player Character: " + JsonUtility.ToJson(playerCharacter));
-
-        if (trigger == "SetRace" || trigger == "SetClass")
-        {
-            CharacterRace race = gameData.Races.FirstOrDefault(r => r.Name == playerCharacter.Race);
-            CharacterClass clazz = gameData.Classes.FirstOrDefault(c => c.Name == playerCharacter.CharacterClass);
-            if (race != null && clazz != null)
-            {
-                playerCharacter.UpdateStats(race, clazz);
-                Debug.Log("Stats Updated: " + JsonUtility.ToJson(playerCharacter));
-            }
-        }
-
-        playerCharacter.SaveUserData();  // Save user data after each update
-        Debug.Log("User data saved.");
     }
 
     private void SaveDialogueHistory()

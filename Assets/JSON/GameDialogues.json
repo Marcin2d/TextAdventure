@@ -57,7 +57,7 @@
             "ID": "charCreate005",
             "Speaker": "The Narrator",
             "Prompt": "In the interest of respect, what pronouns might you use?",
-            "AcceptedInput": ["He/Him", "She/Her", "They/Them"],
+            "AcceptedInput": ["He/Him", "HeHim", "She/Her", "SheHer", "They/Them", "TheyThem"],
             "NegativeInput": [],
             "AlternativeInputs": [],
             "NextPromptID": "charCreate006",

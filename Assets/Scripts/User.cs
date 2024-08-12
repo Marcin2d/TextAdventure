@@ -1,18 +1,21 @@
 using System.IO;
+using System.Linq;
 using UnityEngine;
 
 [System.Serializable]
 public class User
 {
     public string Name;
-    public string Race;
-    public string CharacterClass;
-    public string Pronouns;
+    public CharacterRace Race;
+    public CharacterClass CharacterClass;
+    public Pronouns Pronouns;
     public int Attractiveness;
     public int Strength;
     public int Charisma;
     public int Dexterity;
     public int Intelligence;
+
+    private GameData gameData;
 
     public void SaveUserData()
     {
@@ -22,25 +25,33 @@ public class User
         Debug.Log("User data saved to: " + path);
     }
 
-    public static User LoadUserData()
+    public static User LoadUserData(GameData data)
     {
         string path = Application.persistentDataPath + "/user.json";
         if (File.Exists(path))
         {
             string json = File.ReadAllText(path);
+            var user = JsonUtility.FromJson<User>(json);
+            user.gameData = data;
             Debug.Log("User data loaded: " + json);
-            return JsonUtility.FromJson<User>(json);
+            return user;
         }
         Debug.Log("No user data found, creating new user.");
-        return new User(); // Return a new User if no data is found
+        return new User { gameData = data }; // Return a new User if no data is found
     }
 
-    public void UpdateStats(CharacterRace race, CharacterClass characterClass)
+    public void UpdateStats()
     {
-        Strength = race.Strength + characterClass.Strength;
-        Charisma = race.Charisma + characterClass.Charisma;
-        Dexterity = race.Dexterity + characterClass.Dexterity;
-        Intelligence = race.Intelligence + characterClass.Intelligence;
-        Debug.Log("Stats Updated: Strength = " + Strength + ", Charisma = " + Charisma + ", Dexterity = " + Dexterity + ", Intelligence = " + Intelligence);
+        var raceData = gameData.Races.FirstOrDefault(r => r.Race == Race);
+        var classData = gameData.Classes.FirstOrDefault(c => c.Class == CharacterClass);
+
+        if (raceData != null && classData != null)
+        {
+            Strength = raceData.Strength + classData.Strength;
+            Charisma = raceData.Charisma + classData.Charisma;
+            Dexterity = raceData.Dexterity + classData.Dexterity;
+            Intelligence = raceData.Intelligence + classData.Intelligence;
+            Debug.Log("Stats Updated: Strength = " + Strength + ", Charisma = " + Charisma + ", Dexterity = " + Dexterity + ", Intelligence = " + Intelligence);
+        }
     }
 }
