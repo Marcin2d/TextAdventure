@@ -152,7 +152,13 @@ public class DialogueManager : MonoBehaviour
         var currentDialogue = GetDialogueByID(currentDialogueID);
         if (currentDialogue != null)
         {
-            if (currentDialogueID == "charCreate002" || currentDialogue.AcceptedInput.Any(input => input.Equals(response, System.StringComparison.OrdinalIgnoreCase)))
+            if (currentDialogue.Trigger == "SetName")
+            {
+                HandleTrigger("SetName", response); // Directly handle the name setting
+                currentDialogueID = currentDialogue.NextPromptID;
+                DisplayPrompt(GetDialogueByID(currentDialogueID).Prompt);
+            }
+            else if (currentDialogue.AcceptedInput.Any(input => input.Equals(response, StringComparison.OrdinalIgnoreCase)))
             {
                 HandleTrigger(currentDialogue.Trigger, response);
                 currentDialogueID = currentDialogue.NextPromptID;
@@ -174,7 +180,8 @@ public class DialogueManager : MonoBehaviour
         switch (trigger)
         {
             case "SetName":
-                playerCharacter.Name = response;
+                playerCharacter.Name = response;  // Set the player's chosen name
+                Debug.Log("Player Name Set: " + playerCharacter.Name);
                 break;
             case "SetRace":
                 playerCharacter.Race = (CharacterRace)Enum.Parse(typeof(CharacterRace), response);
