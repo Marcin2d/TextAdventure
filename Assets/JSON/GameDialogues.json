@@ -41,7 +41,7 @@
             "AlternativePrompt": "",
             "Tags": ["test"],
             "Conditions": [],
-			"Trigger": ""
+			"Trigger": "SetRace"
         },
         {
             "ID": "charCreate004",
@@ -55,13 +55,13 @@
             "AlternativePrompt": "",
             "Tags": ["test"],
             "Conditions": [],
-			"Trigger": ""
+			"Trigger": "SetClass"
         },
         {
             "ID": "charCreate005",
             "Speaker": "The Narrator",
-            "Prompt": "In the interest of respect, what pronouns might you use?",
-            "AcceptedInput": ["He/Him", "She/Her", "They/Them"],
+            "Prompt": "I shall take note of that. One final sanity check, on a scale of 1-10 how attractive are you?",
+            "AcceptedInput": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
             "NegativeInput": [],
             "AlternativeInputs": [],
             "NextPromptID": "charCreate006",
@@ -69,24 +69,10 @@
             "AlternativePrompt": "",
             "Tags": ["test"],
             "Conditions": [],
-			"Trigger": ""
+			"Trigger": "SetAttractiveness"
         },
         {
             "ID": "charCreate006",
-            "Speaker": "The Narrator",
-            "Prompt": "I shall take note of that. One final sanity check, on a scale of 1-10 how attractive are you?",
-            "AcceptedInput": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
-            "NegativeInput": [],
-            "AlternativeInputs": [],
-            "NextPromptID": "charCreate007",
-            "NegativePrompt": "",
-            "AlternativePrompt": "",
-            "Tags": ["test"],
-            "Conditions": [],
-			"Trigger": ""
-        },
-        {
-            "ID": "charCreate007",
             "Speaker": "The Narrator",
             "Prompt": "I see, quite the opinion of yourself... Looks like you're nearly all there in the head. Nothing left to do but to turn you loose on this world!",
             "AcceptedInput": ["Thank you"],

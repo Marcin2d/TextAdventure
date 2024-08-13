@@ -3,14 +3,14 @@ using System.Collections.Generic;
 [System.Serializable]
 public class GameData
 {
-    public List<CharacterRaceData> Races;
-    public List<CharacterClassData> Classes;
+    public List<CharacterRaceData> Races;  // List of race data
+    public List<CharacterClassData> Classes;  // List of class data
 }
 
 [System.Serializable]
 public class CharacterRaceData
 {
-    public CharacterRace Race;
+    public string Name;  // Race name
     public int Strength;
     public int Charisma;
     public int Dexterity;
@@ -20,7 +20,7 @@ public class CharacterRaceData
 [System.Serializable]
 public class CharacterClassData
 {
-    public CharacterClass Class;
+    public string Name;  // Class name
     public int Strength;
     public int Charisma;
     public int Dexterity;

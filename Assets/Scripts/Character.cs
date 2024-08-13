@@ -1,4 +1,4 @@
-using System.IO;  // Add this at the top of your script
+using System.IO;  
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -9,7 +9,6 @@ public class Character
     public string Name;
     public CharacterRace Race;
     public CharacterClass CharacterClass;
-    public Pronouns Pronouns;
     public int Attractiveness;
 
     public int Strength;
@@ -26,8 +25,9 @@ public class Character
 
     public void SetRaceAndClass(CharacterRace race, CharacterClass characterClass)
     {
-        var raceData = gameData.Races.FirstOrDefault(r => r.Race == race);
-        var classData = gameData.Classes.FirstOrDefault(c => c.Class == characterClass);
+        // Corrected references: using "Name" instead of "Race" and "Class"
+        var raceData = gameData.Races.FirstOrDefault(r => r.Name == race.ToString());
+        var classData = gameData.Classes.FirstOrDefault(c => c.Name == characterClass.ToString());
 
         if (raceData != null && classData != null)
         {
@@ -63,8 +63,9 @@ public class Character
 
     public void UpdateStats()
     {
-        var raceData = gameData.Races.FirstOrDefault(r => r.Race == Race);
-        var classData = gameData.Classes.FirstOrDefault(c => c.Class == CharacterClass);
+        // Corrected references: using "Name" instead of "Race" and "Class"
+        var raceData = gameData.Races.FirstOrDefault(r => r.Name == Race.ToString());
+        var classData = gameData.Classes.FirstOrDefault(c => c.Name == CharacterClass.ToString());
 
         if (raceData != null && classData != null)
         {

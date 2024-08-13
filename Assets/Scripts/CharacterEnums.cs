@@ -12,9 +12,3 @@ public enum CharacterClass
     Fighter
 }
 
-public enum Pronouns
-{
-    HeHim,
-    SheHer,
-    TheyThem
-}

@@ -22,32 +22,48 @@ public class DialogueManager : MonoBehaviour
 
     void Start()
     {
+        // Load Dialogue JSON
         if (dialogueJson != null)
         {
             dialogueData = JsonUtility.FromJson<DialogueData>(dialogueJson.text);
-            currentDialogueID = dialogueData.StartDialogueID;
+            Debug.Log("Dialogue JSON Loaded: " + dialogueData);
+            currentDialogueID = dialogueData.StartDialogueID; // Initialize the current dialogue ID
         }
         else
         {
             Debug.LogError("Dialogue JSON file is not assigned!");
         }
 
+        // Load GameData JSON
         if (gameDataJson != null)
         {
             gameData = JsonUtility.FromJson<GameData>(gameDataJson.text);
+            Debug.Log("GameData JSON Loaded: " + gameData);
         }
         else
         {
             Debug.LogError("GameData JSON file is not assigned!");
         }
 
-        playerCharacter = User.LoadUserData(gameData); // Load or create user data with GameData
+        // Load User Data
+        playerCharacter = User.LoadUserData(gameData);
+        Debug.Log("Loaded player data: " + JsonUtility.ToJson(playerCharacter));
 
         // Set the file path for saving dialogue history
         historyFilePath = Path.Combine(Application.persistentDataPath, "DialogueHistory.json");
 
-        DisplayPrompt(GetDialogueByID(currentDialogueID).Prompt);
+        // Display the first prompt
+        var startingDialogue = GetDialogueByID(currentDialogueID);
+        if (startingDialogue != null)
+        {
+            DisplayPrompt(startingDialogue.Prompt);
+        }
+        else
+        {
+            Debug.LogError("Starting dialogue not found for ID: " + currentDialogueID);
+        }
 
+        // Set up the submit button
         if (submitButton != null)
         {
             submitButton.onClick.AddListener(OnSubmitResponse);
@@ -68,7 +84,12 @@ public class DialogueManager : MonoBehaviour
 
     DialogueEntry GetDialogueByID(string id)
     {
-        return dialogueData.dialogues.FirstOrDefault(d => d.ID == id);
+        var dialogue = dialogueData.dialogues.FirstOrDefault(d => d.ID == id);
+        if (dialogue == null)
+        {
+            Debug.LogError("No dialogue found for ID: " + id);
+        }
+        return dialogue;
     }
 
     public void DisplayPrompt(string prompt)
@@ -80,7 +101,7 @@ public class DialogueManager : MonoBehaviour
         }
         else
         {
-            Debug.LogError("No dialogue found for the current ID.");
+            Debug.LogError("No dialogue found for the current ID: " + currentDialogueID);
         }
     }
 
@@ -118,10 +139,20 @@ public class DialogueManager : MonoBehaviour
 
         SaveDialogueHistory();
 
+        Debug.Log($"Dialogue added: {speaker}: {text}");
+
         // If the speaker is the player, handle the response and update the user data
         if (speaker == "Player")
         {
-            HandleTrigger(GetDialogueByID(currentDialogueID).Trigger, text);
+            var currentDialogue = GetDialogueByID(currentDialogueID);
+            if (currentDialogue != null)
+            {
+                HandleTrigger(currentDialogue.Trigger, text);
+            }
+            else
+            {
+                Debug.LogError("Current dialogue is null for ID: " + currentDialogueID);
+            }
         }
 
         // Save the user data after any updates
@@ -152,13 +183,16 @@ public class DialogueManager : MonoBehaviour
         var currentDialogue = GetDialogueByID(currentDialogueID);
         if (currentDialogue != null)
         {
+            // If the trigger is SetName, directly save the name
             if (currentDialogue.Trigger == "SetName")
             {
-                HandleTrigger("SetName", response); // Directly handle the name setting
-                currentDialogueID = currentDialogue.NextPromptID;
-                DisplayPrompt(GetDialogueByID(currentDialogueID).Prompt);
+                playerCharacter.Name = response;
+                playerCharacter.SaveUserData();  // Save user data after setting name
+                Debug.Log("Player name set to: " + playerCharacter.Name);
             }
-            else if (currentDialogue.AcceptedInput.Any(input => input.Equals(response, StringComparison.OrdinalIgnoreCase)))
+
+            // Continue with the normal flow
+            if (currentDialogue.AcceptedInput.Length == 0 || currentDialogue.AcceptedInput.Contains(response, StringComparer.OrdinalIgnoreCase))
             {
                 HandleTrigger(currentDialogue.Trigger, response);
                 currentDialogueID = currentDialogue.NextPromptID;
@@ -177,20 +211,18 @@ public class DialogueManager : MonoBehaviour
 
     void HandleTrigger(string trigger, string response)
     {
+        Debug.Log($"Handling trigger: {trigger} with response: {response}");
+
         switch (trigger)
         {
             case "SetName":
-                playerCharacter.Name = response;  // Set the player's chosen name
-                Debug.Log("Player Name Set: " + playerCharacter.Name);
+                playerCharacter.Name = response;
                 break;
             case "SetRace":
                 playerCharacter.Race = (CharacterRace)Enum.Parse(typeof(CharacterRace), response);
                 break;
             case "SetClass":
                 playerCharacter.CharacterClass = (CharacterClass)Enum.Parse(typeof(CharacterClass), response);
-                break;
-            case "SetPronouns":
-                playerCharacter.Pronouns = (Pronouns)Enum.Parse(typeof(Pronouns), response);
                 break;
             case "SetAttractiveness":
                 playerCharacter.Attractiveness = int.Parse(response);
@@ -213,6 +245,7 @@ public class DialogueManager : MonoBehaviour
     {
         string json = JsonUtility.ToJson(dialogueHistory, true);
         File.WriteAllText(historyFilePath, json);
+        Debug.Log("Dialogue history saved to: " + historyFilePath);
     }
 
     private void LoadDialogueHistory()
@@ -221,6 +254,11 @@ public class DialogueManager : MonoBehaviour
         {
             string json = File.ReadAllText(historyFilePath);
             dialogueHistory = JsonUtility.FromJson<DialogueHistory>(json);
+            Debug.Log("Dialogue history loaded.");
+        }
+        else
+        {
+            Debug.Log("No dialogue history found, starting a new one.");
         }
     }
 }

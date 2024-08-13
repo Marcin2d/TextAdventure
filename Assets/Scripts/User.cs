@@ -8,7 +8,6 @@ public class User
     public string Name;
     public CharacterRace Race;
     public CharacterClass CharacterClass;
-    public Pronouns Pronouns;
     public int Attractiveness;
     public int Strength;
     public int Charisma;
@@ -42,8 +41,8 @@ public class User
 
     public void UpdateStats()
     {
-        var raceData = gameData.Races.FirstOrDefault(r => r.Race == Race);
-        var classData = gameData.Classes.FirstOrDefault(c => c.Class == CharacterClass);
+        var raceData = gameData.Races.FirstOrDefault(r => r.Name == Race.ToString());
+        var classData = gameData.Classes.FirstOrDefault(c => c.Name == CharacterClass.ToString());
 
         if (raceData != null && classData != null)
         {
@@ -52,6 +51,10 @@ public class User
             Dexterity = raceData.Dexterity + classData.Dexterity;
             Intelligence = raceData.Intelligence + classData.Intelligence;
             Debug.Log("Stats Updated: Strength = " + Strength + ", Charisma = " + Charisma + ", Dexterity = " + Dexterity + ", Intelligence = " + Intelligence);
+        }
+        else
+        {
+            Debug.LogError("Race or Class data not found in GameData.");
         }
     }
 }
